@@ -73,6 +73,7 @@ def preprocess(df, lower=True, token=True, rempunct=True, dostem=True, ngrams=Fa
         df['Text'] = df['Text'].apply(lambda x: add_ngrams(x,max_n=max_n))
     if remstops:
         df['Text'] = df['Text'].apply(remove_stop)
+    print('Done preprocessing!\n')
     return df
 
 
@@ -106,6 +107,7 @@ def process(dataIn, source=False, rollAvLen=5):
     # normalize
     df = df.apply(lambda x: x/max(x), axis=1)
     
+    print('Done embedding!\n')
     return df
 
 
@@ -122,6 +124,7 @@ def cluster(df, method, percentile=75, max_n=3, rollAvLen=2, opticsParams=(5, 0.
     df_mostfre = df_process[indexer]
 
     df_mostfre['labels'] = OPTICS(min_samples=opticsParams[0], xi=opticsParams[1]).fit_predict(df_mostfre)
+    print('Done clustering!\n')
     return df_mostfre
 
 
