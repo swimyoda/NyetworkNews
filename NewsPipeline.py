@@ -24,6 +24,7 @@ import nltk
 nltk.download('punkt')
 nltk.download('stopwords')
 
+today = datetime.today().strftime('%d%b%Y')
 
 
 
@@ -63,18 +64,23 @@ def add_ngrams(word_list, max_n=3):
 def preprocess(df, lower=True, token=True, rempunct=True, dostem=True, ngrams=False, remstops=True, max_n=3):
     if lower:
         df['Text'] = df['Text'].str.lower()
+        print('Converted to lowercase!\n')
     if token:
         df['Text'] = df['Text'].apply(word_tokenize)
+        print('Tokenized articles!\n')
     if rempunct:
         df['Text'] = df['Text'].apply(remove_punct)
+        print('Removed punctuation!\n')
     if dostem:
         df['Text'] = df['Text'].apply(stem)
+        print('Stemmed words!\n')
     if ngrams:
         df['Text'] = df['Text'].apply(lambda x: add_ngrams(x,max_n=max_n))
+        print('Added 2 to '+str(max_n)+'-grams!\n')
     if remstops:
         df['Text'] = df['Text'].apply(remove_stop)
-    print('Done preprocessing!\n')
-    return df
+        print('Removed stop words!\n')
+    df.to_pickle('Data/2_Preprocessed/'+today+'.csv')
 
 
 # Processing function
@@ -97,36 +103,31 @@ def process(dataIn, source=False, rollAvLen=5):
         for i, word in enumerate(uniq):
             df.loc[word, day] = dailyWords.count(word)
         df.loc[uniq, day] /= sum(df[day])
+    print('Calculated daily frequencies!\n')
 
     # calculate rolling averages
     for i, day in enumerate(days):
         first = max(i-rollAvLen, 0)
         rollingAvDays = days[first:i+1]
         df[day] = df[rollingAvDays].apply(np.mean, axis=1)
+    print('Calculated '+str(rollAvLen)+' day rolling averages!\n')
 
     # normalize
     df = df.apply(lambda x: x/max(x), axis=1)
-    
-    print('Done embedding!\n')
-    return df
+    print('Normalized frequencies!\n')
+    df.to_csv('Data/3_Embedded/'+today+'.csv')
 
 
 # Clustering 
 
-def cluster(df, method, percentile=75, max_n=3, rollAvLen=2, opticsParams=(5, 0.00001)):
-
-    ngram = method == 'ngram'
-
-    df_preproc = preprocess(df, ngrams=ngram, max_n=max_n)
-    df_process = process(df_preproc, rollAvLen=rollAvLen)
-
-    indexer = df_process.apply(sum, axis=1)>np.percentile(df_process.apply(sum, axis=1), percentile)
-    df_mostfre = df_process[indexer]
+def cluster(df, percent=100, max_n=3, rollAvLen=2, opticsParams=(5, 0.00001)):
+    #indexer = df.apply(sum, axis=1)>=np.percentile(df.apply(sum, axis=1), percent)
+    df_mostfre = df#[indexer]
 
     df_mostfre['labels'] = OPTICS(min_samples=opticsParams[0], xi=opticsParams[1]).fit_predict(df_mostfre)
     print('Done clustering!\n')
+    df_mostfre.to_csv('Data/4_Clustered/'+today+'.csv')
     return df_mostfre
-
 
 
 # Helper functions
@@ -179,8 +180,7 @@ def plot_cluster(df, clstnum, topic_name=False, split_by_source=False, include_w
     
     plt.grid()
     
-    if save:
-        plt.savefig(save, pad_inches=10)
+    plt.savefig('Data/5_Analysis/'+today+'_WordFreqPlot.png', pad_inches=10)
         
     plt.show()
 
