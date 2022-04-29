@@ -120,9 +120,9 @@ def process(dataIn, source=False, rollAvLen=5):
 
 # Clustering 
 
-def cluster(df, percent=100, max_n=3, rollAvLen=2, opticsParams=(5, 0.00001)):
-    #indexer = df.apply(sum, axis=1)>=np.percentile(df.apply(sum, axis=1), percent)
-    df_mostfre = df#[indexer]
+def cluster(df, percent=0, max_n=3, rollAvLen=2, opticsParams=(5, 0.00001)):
+    indexer = df.apply(sum, axis=1)>=np.percentile(df.apply(sum, axis=1), percent)
+    df_mostfre = df[indexer]
 
     df_mostfre['labels'] = OPTICS(min_samples=opticsParams[0], xi=opticsParams[1]).fit_predict(df_mostfre)
     print('Done clustering!\n')
